@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<head>
+    <title>Bubble plot</title>
+
+<style>
+    svg {font: 10px font family "Times New Roman";}
+    div.tooltip 
+    {	
+        position: absolute;			
+        text-align: center;			
+        width: 70px;					
+        height: 55px;					
+        padding: 5px;				
+        font: 12px Times New Roman;		
+        background: rgb(192, 213, 240);	
+        border: 0px;		
+        border-radius: 8px;			
+        pointer-events: none;			
+    }
+</style>
+</head>
+
+<svg width="650" height="730" font-family="Times New Roman" font-size="5" text-anchor="middle"></svg>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+<body>
+
+<script>
+    var svg = d3.select("svg"),
+        width = +svg.attr("width"),
+        height = +svg.attr("height");
+
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div")	
+                .attr("class", "tooltip")				
+                .style("opacity", 0);
+
+    svg.append("text")
+        .attr("x", 100)   
+        .attr("y", 0 )
+        .attr("dy", "3.5em" )
+        .attr("text-anchor", "start")  
+        .style("font-size", "20px")  
+  	    .style("font-weight", "bold")
+        .text("State & UT wise literacy rate in 2011 ")
+
+    var pack = d3.pack()
+                .size([width-150, height])
+                .padding(1.5);
+
+    d3.csv("states_2011.csv", 
+    function(d) 
+    {
+        d.value = +d["percent"];
+        d.Call_Type = d["States"]
+        return d;
+    }, 
+    function(error, data) 
+    {
+        if (error) throw error;
+        var color = d3.scaleOrdinal()
+                        .domain(data.map(function(d){ return d.Call_Type;}))
+                        .range(['#728FCE','#98AFC7','#57FEFF','#8EEBEC','#F4A460',
+                                '#FA8072','#F75D59','#E799A3','#F8B88B','#E38AAE',
+                                '#DA70D6','#F433FF','#6960EC','#B666D2','#C6AEC7',
+                                '#DDA0DD','#CCCCFF','#9172EC','#E45E9D','#C25283',
+                                '#F8B88B','#E8ADAA','#E55451','#E78A61','#C36241',
+                                '#BAB86C','#D2B48C','#DBF9DB','#00FF7F','#3B9C9C',
+                                '#46C7C7','#77BFC7','#CFECEC','#FFC0CB','#98FB98']);
+  
+        var root = d3.hierarchy({children: data})
+                        .sum(function(d) { return d.value; })
+
+        var node = svg.selectAll(".node")
+                        .data(pack(root).leaves())
+                        .enter().append("g")
+                        .attr("class", "node")
+                        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+ 
+        node.append("circle")
+            .attr("id", function(d) { return d.id; })
+            .attr("r", function(d) { return d.r; })
+            .style("fill", function(d) { return color(d.data.Call_Type); })
+            .on("mouseover", function(d) 
+            {		
+                div.transition()		
+                .duration(200)		
+                .style("opacity", .9);	
+                var duration = 300;
+  
+        data.forEach(function(d, i) 
+        {
+            console.log(d.value);
+            node.transition().duration(duration).delay(i * duration)
+                .attr("r", d.value);
+        });
+     
+        div.html(d.data.Call_Type + ": <br>"+d.data.value  )	
+            .style("left", (d3.event.pageX) + "px")		
+            .style("top", (d3.event.pageY - 28) + "px");	
+        })					
+    .on("mouseout", function(d) 
+    {		
+        div.transition()		
+            .duration(500)		
+            .style("opacity", 0);	
+    });
+
+    node.append("text")
+        .text(function(d) 
+        {
+            if (d.data.value > 2000){return d.data.Call_Type;}
+            return "";
+        });
+  
+    var legend = svg.selectAll(".legend")
+                    .data(data).enter()
+                    .append("g")
+                    .attr("class","legend")
+                    .attr("transform", "translate(" + 480 + "," + 20+ ")");
+     
+    legend.append("rect")
+            .attr("x", 7) 
+            .attr("y", function(d, i) { return 20 * i; })
+            .attr("width", 10)
+            .attr("height", 10)
+		    .style("fill", function(d) { return color(d.Call_Type)});
+   
+    legend.append("text")
+            .attr("x", 25) 
+    	    .attr("text-anchor", "start")
+            .attr("dy", "1.001em") 
+            .attr("y", function(d, i) { return 20 * i; })
+            .text(function(d) {return d.Call_Type;})
+            .attr("font-size", "11px"); 
+  
+    legend.append("text")
+            .attr("x",55) 
+            .attr("dy", "-.5em")
+            .attr("y",0)
+            .text("States & UTs")
+  	        .attr("font-size", "15px"); 
+});
+</script>
+</body>

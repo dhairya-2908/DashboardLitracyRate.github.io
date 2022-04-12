@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head></head>
+<body>
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<h3 style="margin-left: 15px;">Areawise Litracy Rate</h3>
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz" style="margin-top: 50px; margin-left: 60px;"></div>
+
+<script>
+    // set the dimensions and margins of the graph
+    var margin = {top: 10, right: 30, bottom: 40, left: 50},
+        width = 460 - margin.left - margin.right,
+        padding=-40,
+        legendh=350,
+        height = 400 - margin.top - margin.bottom;
+    
+    // append the svg object to the body of the page
+    var svg = d3.select("#my_dataviz")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+    
+    // Parse the Data
+    d3.csv("year_wise_urban_rural.csv", function(data) {
+    
+      // List of subgroups = header of the csv files = soil condition here
+      var subgroups = data.columns.slice(1)
+    
+      // List of groups = species here = value of the first column called group -> I show them on the X axis
+      var groups = d3.map(data, function(d){return(d.Year)}).keys()
+    
+      // Add X axis
+      var x = d3.scaleBand()
+          .domain(groups)
+          .range([0, width])
+          .padding([0.2])
+      svg.append("g")
+         .attr("transform", "translate(0," + height + ")")
+         .call(d3.axisBottom(x))
+         .append("text")
+         .attr("y", height-320)
+         .attr("x", width - 50)
+         .attr("dy", "0em")
+         .attr("dx", "-11.1em")
+         .attr("text-anchor", "end")
+         .attr("stroke", "black")
+         .text("Years");
+
+      // Add Y axis
+      var y = d3.scaleLinear()
+        .domain([0, 100])
+        .range([ height, 0 ]);
+        svg.append("g")
+         .call(d3.axisLeft(y).tickFormat(function(d){
+             return d + "%";
+         })
+         .ticks(10))
+         .append("text")
+         .attr("transform", "rotate(-90)")
+         .attr("y", 9)
+         .attr("dy", "-5.1em")
+         .attr("dx", "-15em")
+         .attr("text-anchor", "end")
+         .attr("stroke", "black")
+         .text("Literacy Rate");
+    
+      // Another scale for subgroup position?
+      var xSubgroup = d3.scaleBand()
+        .domain(subgroups)
+        .range([0, x.bandwidth()])
+        .padding([0.05])
+    
+      // color palette = one color per subgroup
+      var color = d3.scaleOrdinal()
+        .domain(subgroups)
+        .range(['#D891EF','#B048B5'])
+    
+      // Show the bars
+      svg.append("g")
+        .selectAll("g")
+        // Enter in data = loop group per group
+        .data(data)
+        .enter()
+        .append("g")
+          .attr("transform", function(d) { return "translate(" + x(d.Year) + ",0)"; })
+        .selectAll("rect")
+        .data(function(d) { return subgroups.map(function(key) { return {key: key, value: d[key]}; }); })
+        .enter().append("rect")
+          .attr("x", function(d) { return xSubgroup(d.key); })
+          .attr("y", function(d) { return y(d.value); })
+          .attr("width", xSubgroup.bandwidth())
+          .attr("height", function(d) { return height - y(d.value); })
+          .attr("fill", function(d,i) { return color(d.key); })
+          .on("mouseover", function(d) { tooltip3.style("display", null); })
+          .on("mouseout", function() { tooltip3.style("display", "none"); })
+          .on("mousemove", function(d) {
+      console.log(d);
+      var xPosition = (d3.mouse(this)[0]+100);
+      var yPosition = (d3.mouse(this)[1]-30);
+      tooltip3.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
+      tooltip3.select("text").text(d.key+": "+d.value);
+    });
+
+    var tooltip = d3.select("#my_dataviz")
+    .append("div")
+    .style("opacity", 1)
+    .attr("class", "tooltip")
+    .style("background-color", "lightsteelblue")
+    //.style("border", "solid")
+    //.style("border-width", "0px")
+    //.style("border-radius", "0px")
+    //.style("padding", "0px")
+
+ /*var mouseover = function(g) {
+    var subgroupName = d3.select(this.parentNode).datum().key;
+    var subgroupValue = d.data[subgroupName];
+    tooltip
+        .html("subgroup: " + subgroupName + "<br>" + "Value: " + subgroupValue)
+        .style("opacity", 1)
+  }
+  var mousemove = function(g) {
+    tooltip
+      .style("left", (d3.mouse(this)[0]+90) + "px")
+      .style("top", (d3.mouse(this)[1]) + "px")
+  }
+  var mouseleave = function(g) {
+    tooltip
+      .style("opacity", 0)
+  }*/
+
+    var tooltip3 = svg.append("g")
+    .attr("class", "tooltip")
+    .style("display", "none")
+    .style("position", "absolute");
+     
+  tooltip3.append("rect")
+    .attr("width", 70)
+    .attr("height", 20)
+    .attr("fill", "lightsteelblue")
+    .style("opacity", 1);
+
+  tooltip3.append("text")
+    .attr("x", 35)
+    .attr("dy", "1.2em")
+    .style("text-anchor", "middle")
+    .attr("font-size", "12px")
+    .attr("font-weight", "bold");
+  
+  var legendm = svg.append('g')
+        .attr('class', 'legend')
+        .attr('transform', 'translate(' + padding + ','+ (height - legendh)  + ')');
+
+    legendm.selectAll('rect')
+        .data(subgroups)
+        .enter()
+        .append('rect')
+        .attr('x', 70)
+        .attr('y', function(d,i){
+            return i * 18;
+        })
+        .attr('width', 12)
+        .attr('height', 12)
+        .attr('fill', function(d,i){return color(d);
+        });
+
+        legendm.selectAll('text')
+        .data(subgroups)
+        .enter()
+        .append('text')
+        .text(function(d){
+            return d;
+        })
+        .attr('x', 85)
+        .attr('y', function(d, i){
+            return i * 18;
+        })
+        //.attr("dy", "1em")
+        .attr("font-size", "15px") 
+        .attr('text-anchor', 'start')
+        .attr('alignment-baseline', 'hanging');
+      })
+    
+    </script>
+    </body>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .arc text {
+            font: 17px Times New Roman;
+            text-anchor: middle;
+        }
+
+        .arc path {
+            stroke: rgb(255, 255, 255);
+        }
+
+        .title {
+            fill: rgb(0, 0, 0);
+            font-weight: bold;
+        }
+        div.tooltip {	
+    position: absolute;			
+    text-align: center;			
+    width: 45px;					
+    height: 35px;					
+    padding: 2px;				
+    font: 12px Times New Roman;		
+    background: lightsteelblue;	
+    border: 0px;		
+    border-radius: 8px;			
+    pointer-events: none;	
+    font-weight: bold;		
+  }
+    </style>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body style="overflow: hidden;">
+
+    <div>
+        <svg width="600" height="600" style="margin-left: 0%;"></svg>
+        <script>
+            
+            var svg = d3.select("svg"),
+                width = svg.attr("width"),
+                height = svg.attr("height"),
+                radius = Math.min(width, height) / 2;
+
+            var div = d3.select("body").append("div")	
+               .attr("class", "tooltip")				
+               .style("opacity", 0);
+
+            var g = svg.append("g")
+                .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+            var color = d3.scaleOrdinal(['#F778A1', '#C32148']);
+
+            var pie = d3.pie().value(function (d) {
+                return d.percent;
+            });
+
+            var path = d3.arc()
+                .outerRadius(radius - 100)
+                .innerRadius(130);
+
+            var label = d3.arc()
+                .outerRadius(radius)
+                .innerRadius(radius - 50);
+
+            var pack = d3.pack()
+                .size([width, height])
+                .padding(1.5);
+            
+            d3.csv("Nagaland.csv", function (error, data) {
+                if (error) {
+                    throw error;
+                }
+
+            var root = d3.hierarchy({children: data})
+                .sum(function(d) { return d.value; })
+    
+            var node = svg.selectAll(".node")
+                .data(pack(root).leaves())
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+                
+            var arc = g.selectAll(".arc")
+                .data(pie(data))
+                .enter().append("g")
+                .attr("class", "arc");
+
+            arc.append("path")
+                .attr("d", path)
+                .attr("fill", function (d) { return color(d.data.States); })
+                .on("mouseover", function(d) {		
+            div.transition()		
+                .duration(200)		
+                .style("opacity", .9);
+            var duration = 300;
+                data.forEach(function(d, i) {
+                node.transition().duration(duration).delay(i * duration)
+                .attr("r", d.value);
+});	
+            div.html(d.data.States + ": <br>"+d.data.percent)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");	
+  })					
+            .on("mouseout", function(d) {		
+                div.transition()		
+                .duration(500)		
+                .style("opacity", 0);	
+  });
+  node.append("text")
+      .text(function(d) {
+     return d.data.percent;});
+
+                var arc = g.selectAll(".arc")
+                    .data(pie(data))
+                    .enter().append("g")
+                    .attr("class", "arc");
+
+                arc.append("path")
+                    .attr("d", path)
+                    .attr("fill", function (d) { return color(d.data.States); });
+
+                console.log(arc)
+
+            svg.append("g")
+                .attr("transform", "translate(" + (width / 2 - 30) + "," + 60 + ")")
+                .append("text")
+                .attr("class", "title")
+                .text("Nagaland")
+
+      });
+        </script>
+    </div>
+</body>
+
+</html>
